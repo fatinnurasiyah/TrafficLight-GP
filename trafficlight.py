@@ -124,45 +124,48 @@ if st.button("Run Genetic Programming (GP)"):
     exec_time = time.time() - start_time
 
     st.success("Result Found")
-
-    if st.button("Run Genetic Programming (GP)"):
+if st.button("Run Genetic Programming (GP)"):
     start_time = time.time()
 
     with st.spinner("Running GP evolution..."):
-        ...
-    
+        population = [random_expression(X.shape[1]) for _ in range(population_size)]
+        fitness_history = []
+
+        for gen in range(generations):
+            scored = [(expr, fitness(expr, X, y)) for expr in population]
+            scored.sort(key=lambda x: x[1])
+
+            best_fitness_gen = scored[0][1]
+            fitness_history.append(best_fitness_gen)
+
+            population = [expr for expr, _ in scored[:population_size // 2]]
+
+            while len(population) < population_size:
+                parent = random.choice(population)
+                if random.random() < mutation_rate:
+                    population.append(mutate(parent))
+                else:
+                    population.append(parent)
+
+        best_expr = min(population, key=lambda e: fitness(e, X, y))
+        best_fitness = fitness(best_expr, X, y)
+
+    exec_time = time.time() - start_time
+
     st.success("Result Found")
 
-    # =========================
-    # Optimization Results
-    # =========================
+    coef, feature, bias = best_expr
+    feature_name = feature_names[feature]
+
     st.markdown("**Best Interpretable Mathematical Model Generated:**")
     st.code(f"waiting_time = {coef:.3f} × {feature_name} + {bias:.3f}")
 
-    st.write(f"⏱ **Execution Time:** {exec_time:.4f} seconds")
-    st.write(f"📉 **Best Fitness (MSE):** {best_fitness:.4f}")
+    st.write(f"⏱ Execution Time: {exec_time:.4f} seconds")
+    st.write(f"📉 Best Fitness (MSE): {best_fitness:.4f}")
 
-    # =========================
-    # Convergence Analysis
-    # =========================
-    st.subheader("📈 Convergence Behaviour")
-    st.line_chart(pd.DataFrame({"Best Fitness": fitness_history}))
-
-    # =========================
-    # Performance Analysis
-    # =========================
-    st.subheader("Performance Analysis")
-    st.markdown(
-        "- **Convergence Rate:** Rapid improvement during early generations\n"
-        "- **Accuracy:** GP-generated model predicts waiting time effectively\n"
-        "- **Computational Efficiency:** Low execution time\n"
-    )
-
-    # =========================
-    # Conclusion
-    # =========================
     st.subheader("Conclusion")
     st.markdown(
         "This Streamlit-based Genetic Programming system demonstrates how evolutionary computation "
         "can automatically generate interpretable mathematical models for predicting traffic waiting time."
     )
+
