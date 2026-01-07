@@ -125,14 +125,17 @@ if st.button("Run Genetic Programming (GP)"):
 
     st.success("Result Found")
 
+    if st.button("Run Genetic Programming (GP)"):
+    start_time = time.time()
+
+    with st.spinner("Running GP evolution..."):
+        ...
+    
+    st.success("Result Found")
+
     # =========================
     # Optimization Results
     # =========================
-    st.subheader("")
-
-    coef, feature, bias = best_expr
-    feature_name = feature_names[feature]
-
     st.markdown("**Best Interpretable Mathematical Model Generated:**")
     st.code(f"waiting_time = {coef:.3f} × {feature_name} + {bias:.3f}")
 
@@ -146,42 +149,20 @@ if st.button("Run Genetic Programming (GP)"):
     st.line_chart(pd.DataFrame({"Best Fitness": fitness_history}))
 
     # =========================
-    # Prediction Analysis
-    # =========================
-    y_pred = predict(best_expr, X)
-
-    st.subheader("📊 Actual vs Predicted Waiting Time")
-    st.scatter_chart(pd.DataFrame({
-        "Actual Waiting Time": y,
-        "Predicted Waiting Time": y_pred
-    }))
-
-    # =========================
     # Performance Analysis
     # =========================
     st.subheader("Performance Analysis")
     st.markdown(
         "- **Convergence Rate:** Rapid improvement during early generations\n"
         "- **Accuracy:** GP-generated model predicts waiting time effectively\n"
-        "- **Computational Efficiency:** Low execution time due to simple expressions\n\n"
-        "**Observations:**\n"
-        "- Fitness stabilizes after sufficient generations\n"
-        "- The evolved model is interpretable and human-readable\n"
-        "- Suitable for traffic prediction and optimization tasks"
+        "- **Computational Efficiency:** Low execution time\n"
     )
-
-    st.markdown("**Model Interpretation:**")
-st.write(
-    f"For every unit increase in **{feature_name}**, the predicted waiting time "
-    f"changes by approximately **{coef:.2f} units**, with a baseline delay of **{bias:.2f} units**."
-)
-
 
     # =========================
     # Conclusion
     # =========================
     st.subheader("Conclusion")
     st.markdown(
-        "This Streamlit-based Genetic Programming system demonstrates how evolutionary computation can automatically generate interpretable mathematical models for predicting traffic waiting time. "
-        "Unlike Genetic Algorithms that optimize fixed parameters, GP evolves symbolic expressions, making the resulting model transparent and explainable."
+        "This Streamlit-based Genetic Programming system demonstrates how evolutionary computation "
+        "can automatically generate interpretable mathematical models for predicting traffic waiting time."
     )
