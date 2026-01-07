@@ -71,11 +71,8 @@ def predict(expr, X):
     return coef * X[:, feature] + bias
 
 def fitness(expr, X, y):
-    coef, feature, bias = expr
     y_pred = predict(expr, X)
-    mse = np.mean((y - y_pred) ** 2)
-    complexity_penalty = 0.01 * abs(coef)
-    return mse + complexity_penalty
+    return np.mean((y - y_pred) ** 2)
 
 def mutate(expr):
     coef, feature, bias = expr
@@ -84,9 +81,9 @@ def mutate(expr):
     return (coef, feature, bias)
 
 if feature_mode == "Single Best Feature (Default)":
-    feature = random.randint(0, n_features - 1)
+    feature = random.randint()
 else:
-    feature = random.choice(range(n_features))
+    feature = random.choice(range())
 
 # =========================
 # Run GP Optimization
@@ -97,7 +94,7 @@ if st.button("Run Genetic Programming (GP)"):
     start_time = time.time()
 
     with st.spinner("Running GP evolution..."):
-        population = [random_expression(X.shape[1]) for _ in range(population_size)]
+        population = [random_expression() for _ in range(population_size)]
         fitness_history = []
 
         for gen in range(generations):
