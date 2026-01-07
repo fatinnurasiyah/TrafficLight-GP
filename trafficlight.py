@@ -116,4 +116,4 @@ if st.button("▶ Run GP Optimization"):
     - Rapid fitness improvement in early generations  
     - Stable convergence after sufficient iterations  
     - GP generates interpretable mathematical expressions  
-    """
+    """)
