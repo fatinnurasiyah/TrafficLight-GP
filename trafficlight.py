@@ -18,6 +18,7 @@ st.markdown("JIE 42903 - Evolutionary Computing (Lab Report and Project ")
 st.subheader("Traffic Dataset")
 
 data = pd.read_csv("traffic_dataset.csv")
+feature_names = list(data.drop(columns=["vehicle_count"]).columns)
 
 if data["time_of_day"].dtype == object:
     data["time_of_day"] = data["time_of_day"].map({
