@@ -20,7 +20,7 @@ uploaded_file = st.file_uploader("Choose CSV file", type="csv")
 if uploaded_file is not None:
     data = pd.read_csv(uploaded_file)
 
-    # Encode time_of_day
+    # Encode time_of_day if exists
     if 'time_of_day' in data.columns:
         data['time_of_day'] = data['time_of_day'].map({
             'morning': 1,
@@ -32,10 +32,17 @@ if uploaded_file is not None:
     st.subheader("Traffic Dataset Preview")
     st.dataframe(data.head())
 
+    # -------------------------
+    # Select Target Variable
+    # -------------------------
+    numeric_cols = data.select_dtypes(include=np.number).columns.tolist()
+    target_column = st.selectbox("Select target variable (numerical)", numeric_cols)
+    st.markdown(f"**Selected target:** `{target_column}`")
+
     # Features & target
-    feature_names = list(data.drop(columns=["vehicle_count"]).columns)
-    X = data.drop(columns=["vehicle_count"]).values
-    y = data["vehicle_count"].values
+    feature_names = [col for col in numeric_cols if col != target_column]
+    X = data[feature_names].values
+    y = data[target_column].values
 
     # =========================
     # Sidebar Parameters
@@ -49,7 +56,7 @@ if uploaded_file is not None:
         complexity_weight = st.sidebar.slider("Complexity Weight", 0.0, 1.0, 0.2, help="Penalizes complex solutions")
 
     # =========================
-    # GP Helper Functions
+    # GP Helper Functions (same as before)
     # =========================
     def random_feature():
         return random.randint(0, len(feature_names)-1)
@@ -66,9 +73,8 @@ if uploaded_file is not None:
         if optimization_mode == "Single Objective":
             return mse
         else:
-            # penalize complexity (larger coefficients)
             return mse + complexity_weight * abs(a)
-    
+
     def mutate(individual):
         feature_idx, a, b = individual
         if random.random() < mutation_rate:
@@ -119,9 +125,9 @@ if uploaded_file is not None:
         st.metric("Execution Time (s)", f"{exec_time:.4f}")
         st.metric("Best Fitness (MSE)", f"{best_fitness:.4f}")
 
-        st.subheader("Best Feature for Vehicle Count Prediction")
+        st.subheader(f"Best Feature for Predicting `{target_column}`")
         st.markdown(f"**{best_feature_name}** is the most influential feature.")
-        st.markdown(f"Mathematical Model: `vehicle_count = {a:.2f} × {best_feature_name} + {b:.2f}`")
+        st.markdown(f"Mathematical Model: ` {target_column} = {a:.2f} × {best_feature_name} + {b:.2f} `")
 
         # =========================
         # Visualizations
@@ -130,18 +136,17 @@ if uploaded_file is not None:
             st.markdown("📈 **Convergence Curve**")
             st.line_chart(pd.DataFrame({"Best Fitness": fitness_history}))
         with col2:
-            st.markdown("📊 **Actual vs Predicted Vehicle Count**")
+            st.markdown("📊 **Actual vs Predicted**")
             st.scatter_chart(pd.DataFrame({"Actual": y, "Predicted": y_pred}))
 
         # =========================
         # Conclusion
         st.subheader("Conclusion")
-        st.markdown("""
-        This GP model identifies the most influential traffic feature affecting vehicle count 
-        and generates a simple linear model: vehicle_count = a * feature + b.
+        st.markdown(f"""
+        This GP model identifies the most influential numerical feature affecting `{target_column}` 
+        and generates a simple linear model: `{target_column} = a * feature + b`.
         Multi-objective optimization balances accuracy and simplicity.
         """)
 else:
     st.info("Please upload a CSV file to start GP optimization.")
-
 
