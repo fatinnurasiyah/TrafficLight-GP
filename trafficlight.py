@@ -12,8 +12,9 @@ st.title("🚦 Traffic Light Optimization using Genetic Programming (GP)")
 st.markdown("JIE 42903 - Evolutionary Computing (Lab Report and Project)")
 
 # =========================
-# Load Dataset
+# 1. Case Study Selection: Load Dataset
 # =========================
+st.subheader("Traffic Dataset Preview")
 data = pd.read_csv("traffic_dataset.csv")
 
 # Encode categorical features
@@ -21,31 +22,32 @@ for col in data.columns:
     if data[col].dtype == object:
         data[col] = data[col].astype("category").cat.codes
 
-st.subheader("Traffic Dataset Preview")
 st.dataframe(data.head())
 
-# =========================
-# Features & Target
-# =========================
+# Features and target
 feature_names = list(data.drop(columns=["vehicle_count"]).columns)
 X = data.drop(columns=["vehicle_count"]).values
 y = data["vehicle_count"].values
 
 # =========================
-# Sidebar Parameters
+# Sidebar: GP Parameters
 # =========================
+st.sidebar.subheader("GP Parameters")
 population_size = st.sidebar.slider("Population Size", 20, 100, 50)
-generations = st.sidebar.slider("Generations", 5, 50, 20)
+generations = st.sidebar.slider("Generations", 5, 100, 30)
 mutation_rate = st.sidebar.slider("Mutation Rate", 0.01, 0.5, 0.1)
 coef_range = st.sidebar.slider("Coefficient Range (±)", 0.5, 5.0, 2.0)
 bias_range = st.sidebar.slider("Bias Range (±)", 1.0, 10.0, 5.0)
-complexity_weight = st.sidebar.slider("Complexity Weight", 0.0, 1.0, 0.2, help="Trade-off between accuracy and simplicity")
+optimization_mode = st.sidebar.radio("Optimization Mode", ["Single Objective", "Multi Objective"])
+complexity_weight = 0.0
+if optimization_mode == "Multi Objective":
+    complexity_weight = st.sidebar.slider("Complexity Weight", 0.0, 1.0, 0.2, help="Penalty for complex coefficients")
 
 # =========================
-# GP Helper Functions
+# 2. Genetic Programming Functions
 # =========================
 def random_individual():
-    feature_idx = random.randint(0, len(feature_names) - 1)
+    feature_idx = random.randint(0, len(feature_names)-1)
     coef = random.uniform(-coef_range, coef_range)
     bias = random.uniform(-bias_range, bias_range)
     return (coef, feature_idx, bias)
@@ -57,36 +59,36 @@ def predict(expr, X):
 def fitness(expr, X, y):
     y_pred = predict(expr, X)
     mse = np.mean((y - y_pred)**2)
-    # Multi-objective: add penalty for coefficient magnitude
-    return mse + complexity_weight * abs(expr[0])
+    if optimization_mode == "Single Objective":
+        return mse
+    else:
+        return mse + complexity_weight * abs(expr[0])
 
 def mutate(expr):
     coef, feature_idx, bias = expr
     if random.random() < mutation_rate:
-        feature_idx = random.randint(0, len(feature_names) - 1)
+        feature_idx = random.randint(0, len(feature_names)-1)
     coef += random.uniform(-0.2*coef_range, 0.2*coef_range)
     bias += random.uniform(-0.2*bias_range, 0.2*bias_range)
     return (coef, feature_idx, bias)
 
 # =========================
-# Run GP
+# 5. Streamlit: Run GP
 # =========================
-st.subheader("Genetic Programming Optimization Results")
-
-if st.button("Run Multi-Objective GP"):
+st.subheader("Run Genetic Programming Optimization")
+if st.button("Run GP"):
     start_time = time.time()
-
-    # Initialize population
     population = [random_individual() for _ in range(population_size)]
     fitness_history = []
 
     for gen in range(generations):
+        # Evaluate fitness
         scored = [(ind, fitness(ind, X, y)) for ind in population]
         scored.sort(key=lambda x: x[1])
         fitness_history.append(scored[0][1])
 
         # Selection: top 50%
-        population = [ind for ind, _ in scored[:population_size // 2]]
+        population = [ind for ind, _ in scored[:population_size//2]]
 
         # Reproduction & Mutation
         while len(population) < population_size:
@@ -102,17 +104,17 @@ if st.button("Run Multi-Objective GP"):
     exec_time = time.time() - start_time
 
     # =========================
-    # Results
+    # 3. Performance Analysis
     # =========================
-    st.success("Multi-Objective GP Completed")
+    st.success("GP Optimization Completed")
     st.metric("Execution Time (s)", f"{exec_time:.4f}")
-    st.metric("Best Fitness (MSE + Complexity Penalty)", f"{best_fitness:.4f}")
+    st.metric("Best Fitness", f"{best_fitness:.4f}")
 
-    st.subheader("Best Interpretable Model")
+    st.subheader("Best Mathematical Model")
     st.code(f"vehicle_count = {best_coef:.2f} × {best_feature_name} + {best_bias:.2f}")
 
     # =========================
-    # Visualizations
+    # Visualization: Convergence & Accuracy
     # =========================
     col1, col2 = st.columns(2)
     with col1:
@@ -123,11 +125,22 @@ if st.button("Run Multi-Objective GP"):
         st.scatter_chart(pd.DataFrame({"Actual": y, "Predicted": y_pred}))
 
     # =========================
+    # 4. Extended Analysis
+    # =========================
+    st.subheader("Extended Analysis")
+    st.markdown(f"""
+    - Optimization Mode: **{optimization_mode}**
+    - Multi-objective optimization penalizes high coefficient values to produce simpler models.
+    - The best feature affecting vehicle count: **{best_feature_name}**
+    - Convergence curve shows early rapid improvement followed by slower refinement, typical of GP.
+    """)
+
+    # =========================
     # Conclusion
     # =========================
     st.subheader("Conclusion")
-    st.markdown(
-        "The multi-objective GP model balances prediction accuracy and simplicity. "
-        "It generates interpretable formulas for vehicle count estimation, helping optimize traffic lights "
-        "while keeping the model easy to understand for real-world traffic management."
-    )
+    st.markdown("""
+    The Genetic Programming model successfully predicts vehicle count for traffic light optimization.
+    Multi-objective GP balances prediction accuracy and interpretability. The system identifies the
+    most influential traffic feature and generates an easy-to-understand linear model suitable for real-world traffic management.
+    """)
