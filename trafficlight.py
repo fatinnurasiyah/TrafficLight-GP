@@ -12,27 +12,30 @@ st.title("🚦 Traffic Light Optimization using Genetic Programming (GP)")
 st.markdown("JIE 42903 - Evolutionary Computing (Lab Report and Project)")
 
 # =========================
-# 1. Case Study Selection: Load Dataset
+# 1. Load Dataset
 # =========================
-st.subheader("Traffic Dataset ")
-data = pd.read_csv("traffic_dataset.csv")
+data = pd.read_csv("/mnt/data/traffic_dataset.csv")
 
-# Encode categorical features
-for col in data.columns:
-    if data[col].dtype == object:
-        data[col] = data[col].astype("category").cat.codes
+# Encode time_of_day: morning=1, afternoon=2, evening=3, night=4
+if 'time_of_day' in data.columns:
+    data['time_of_day'] = data['time_of_day'].map({
+        'morning': 1,
+        'afternoon': 2,
+        'evening': 3,
+        'night': 4
+    })
 
+st.subheader("Traffic Dataset Preview")
 st.dataframe(data.head())
 
-# Features and target
+# Features & target
 feature_names = list(data.drop(columns=["vehicle_count"]).columns)
 X = data.drop(columns=["vehicle_count"]).values
 y = data["vehicle_count"].values
 
 # =========================
-# Sidebar: GP Parameters
+# Sidebar Parameters
 # =========================
-st.sidebar.subheader("GP Parameters")
 population_size = st.sidebar.slider("Population Size", 20, 100, 50)
 generations = st.sidebar.slider("Generations", 5, 50, 20)
 mutation_rate = st.sidebar.slider("Mutation Rate", 0.01, 0.5, 0.1)
@@ -48,12 +51,12 @@ def random_feature():
     return random.randint(0, len(feature_names)-1)
 
 def fitness(feature_idx, X, y):
-    y_pred = X[:, feature_idx]  # Use feature value directly as prediction
+    y_pred = X[:, feature_idx]  # predict using only the feature value
     mse = np.mean((y - y_pred)**2)
     if optimization_mode == "Single Objective":
         return mse
     else:
-        return mse + complexity_weight  # Simple penalty
+        return mse + complexity_weight  # optional penalty
 
 def mutate(feature_idx):
     if random.random() < mutation_rate:
@@ -63,7 +66,8 @@ def mutate(feature_idx):
 # =========================
 # 3. Run GP
 # =========================
-st.subheader("Genetic Programming Optimization Results")
+st.subheader("Genetic Programming Optimization")
+
 if st.button("Run GP"):
     start_time = time.time()
 
@@ -79,7 +83,7 @@ if st.button("Run GP"):
         # Selection: top 50%
         population = [f for f, _ in scored[:population_size//2]]
 
-        # Reproduction & Mutation
+        # Reproduction & mutation
         while len(population) < population_size:
             parent = random.choice(population)
             population.append(mutate(parent))
@@ -92,7 +96,7 @@ if st.button("Run GP"):
     exec_time = time.time() - start_time
 
     # =========================
-    # Results
+    # 4. Display Results
     # =========================
     st.success("GP Optimization Completed")
     st.metric("Execution Time (s)", f"{exec_time:.4f}")
@@ -102,7 +106,7 @@ if st.button("Run GP"):
     st.markdown(f"**{best_feature_name}** is the most influential feature for predicting vehicle count.")
 
     # =========================
-    # Visualization
+    # 5. Visualizations
     # =========================
     col1, col2 = st.columns(2)
     with col1:
@@ -113,10 +117,12 @@ if st.button("Run GP"):
         st.scatter_chart(pd.DataFrame({"Actual": y, "Predicted": y_pred}))
 
     # =========================
-    # Conclusion
+    # 6. Conclusion
     # =========================
     st.subheader("Conclusion")
     st.markdown("""
-    This simplified GP model identifies the key traffic feature affecting vehicle count. 
-    By omitting coefficients and bias, the model is fully interpretable and can support traffic light optimization decisions effectively.
+    This GP model identifies the most influential traffic feature affecting vehicle count. 
+    By using only the feature values directly (no coefficients), the model is fully interpretable and suitable for managing traffic congestion.
+    Multi-objective optimization allows balancing accuracy and model simplicity.
     """)
+
